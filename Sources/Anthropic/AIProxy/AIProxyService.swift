@@ -32,7 +32,7 @@ struct AIProxyService: AnthropicService {
    /// Defaults to "2023-06-01"
    private var apiVersion: String
 
-   private static let betaHeader = "max-tokens-3-5-sonnet-2024-07-15"
+   private static let betaHeader = "prompt-caching-2024-07-31"
 
    init(
       partialKey: String,

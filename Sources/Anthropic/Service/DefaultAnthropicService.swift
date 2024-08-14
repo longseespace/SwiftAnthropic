@@ -17,7 +17,7 @@ struct DefaultAnthropicService: AnthropicService {
    /// Set this flag to TRUE if you need to print request events in DEBUG builds.
    private let debugEnabled: Bool
    
-   private static let betaHeader = "max-tokens-3-5-sonnet-2024-07-15"
+   private static let betaHeader = "prompt-caching-2024-07-31"
 
    init(
       apiKey: String,

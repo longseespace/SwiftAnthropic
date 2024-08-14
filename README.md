@@ -581,6 +581,12 @@ public struct MessageResponse: Decodable {
       
       /// The number of output tokens which were used.
       public let outputTokens: Int
+      
+      /// Tokens written to the cache when creating a new entry.
+      public let cacheCreationInputTokens: Int?
+       
+      /// Tokens retrieved from the cache for this request.
+      public let cacheReadInputTokens: Int?
    }
 }
 ```

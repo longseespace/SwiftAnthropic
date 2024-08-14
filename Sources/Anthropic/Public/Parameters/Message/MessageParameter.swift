@@ -37,7 +37,7 @@ public struct MessageParameter: Encodable {
    
    /// System prompt.
    /// A system prompt is a way of providing context and instructions to Claude, such as specifying a particular goal or role. See our [guide to system prompts](https://docs.anthropic.com/claude/docs/how-to-use-system-prompts).
-   public let system: String?
+   public let system: Message.Content?
    
    /// An object describing metadata about the request.
    public let metadata: MetaData?
@@ -88,6 +88,8 @@ public struct MessageParameter: Encodable {
       
       public enum Content: Encodable {
          
+         static let defaultCacheControl = CacheControl(type: "ephemeral")
+         
          case text(String)
          case list([ContentObject])
          
@@ -108,6 +110,8 @@ public struct MessageParameter: Encodable {
             case toolUse(String, String, MessageResponse.Content.Input)
             case toolResult(String, String)
             
+            case textWithCacheControl(String)
+            
             // Custom encoding to handle different cases
             public func encode(to encoder: Encoder) throws {
                var container = encoder.container(keyedBy: CodingKeys.self)
@@ -115,6 +119,10 @@ public struct MessageParameter: Encodable {
                case .text(let text):
                   try container.encode("text", forKey: .type)
                   try container.encode(text, forKey: .text)
+               case .textWithCacheControl(let text):
+                  try container.encode("text", forKey: .type)
+                  try container.encode(text, forKey: .text)
+                  try container.encode(Content.defaultCacheControl, forKey: .cacheControl)
                case .image(let source):
                   try container.encode("image", forKey: .type)
                   try container.encode(source, forKey: .source)
@@ -141,6 +149,8 @@ public struct MessageParameter: Encodable {
                 
                 case toolUseId = "tool_use_id"
                 case content
+                
+                case cacheControl = "cache_control"
             }
          }
          
@@ -170,6 +180,10 @@ public struct MessageParameter: Encodable {
                self.mediaType = mediaType.rawValue
                self.data = data
             }
+         }
+         
+         public struct CacheControl: Encodable {
+            public let type: String
          }
       }
       
@@ -369,6 +383,36 @@ public struct MessageParameter: Encodable {
       messages: [Message],
       maxTokens: Int,
       system: String? = nil,
+      metadata: MetaData? = nil,
+      stopSequences: [String]? = nil,
+      stream: Bool = false,
+      temperature: Double? = nil,
+      topK: Int? = nil,
+      topP: Double? = nil,
+      tools: [Tool]? = nil)
+   {
+      self.model = model.value
+      self.messages = messages
+      self.maxTokens = maxTokens
+      if let system {
+         self.system = .text(system)
+      } else {
+         self.system = nil
+      }
+      self.metadata = metadata
+      self.stopSequences = stopSequences
+      self.stream = stream
+      self.temperature = temperature
+      self.topK = topK
+      self.topP = topP
+      self.tools = tools
+   }
+   
+   public init(
+      model: Model,
+      messages: [Message],
+      maxTokens: Int,
+      system: Message.Content,
       metadata: MetaData? = nil,
       stopSequences: [String]? = nil,
       stream: Bool = false,
