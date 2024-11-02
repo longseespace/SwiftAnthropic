@@ -67,11 +67,9 @@ extension Endpoint {
       request.addValue("application/json", forHTTPHeaderField: "Content-Type")
       request.addValue("\(apiKey)", forHTTPHeaderField: "x-api-key")
       request.addValue("\(version)", forHTTPHeaderField: "anthropic-version")
-       
       if let betaHeaders {
          request.addValue("\(betaHeaders.joined(separator: ","))", forHTTPHeaderField: "anthropic-beta")
       }
-
       request.httpMethod = method.rawValue
       if let params {
          let encoder = JSONEncoder()
