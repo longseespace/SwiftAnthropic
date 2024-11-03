@@ -137,6 +137,7 @@ public struct MessageParameter: Encodable {
             case toolUse(String, String, MessageResponse.Content.Input)
             case toolResult(String, String)
             case cache(Cache)
+            case document(DocumentSource)
 
             // Custom encoding to handle different cases
             public func encode(to encoder: Encoder) throws {
@@ -147,6 +148,9 @@ public struct MessageParameter: Encodable {
                   try container.encode(text, forKey: .text)
                case .image(let source):
                   try container.encode("image", forKey: .type)
+                  try container.encode(source, forKey: .source)
+               case .document(let source):
+                  try container.encode("document", forKey: .type)
                   try container.encode(source, forKey: .source)
                case .toolUse(let id, let name, let input):
                    try container.encode("tool_use", forKey: .type)
@@ -199,6 +203,31 @@ public struct MessageParameter: Encodable {
             
             public init(
                type: ImageSourceType,
+               mediaType: MediaType,
+               data: String)
+            {
+               self.type = type.rawValue
+               self.mediaType = mediaType.rawValue
+               self.data = data
+            }
+         }
+         
+         public struct DocumentSource: Encodable {
+            
+            public let type: String
+            public let mediaType: String
+            public let data: String
+            
+            public enum MediaType: String, Encodable {
+               case pdf = "application/pdf"
+            }
+            
+            public enum DocumentSourceType: String, Encodable {
+               case base64
+            }
+            
+            public init(
+               type: DocumentSourceType,
                mediaType: MediaType,
                data: String)
             {
