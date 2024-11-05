@@ -132,26 +132,35 @@ public struct MessageParameter: Encodable {
          }
          
          public enum ContentObject: Encodable {
-            case text(String)
-            case image(ImageSource)
+            case text(String, CacheControl? = nil)
+            case image(ImageSource, CacheControl? = nil)
             case toolUse(String, String, MessageResponse.Content.Input)
             case toolResult(String, String)
             case cache(Cache)
-            case document(DocumentSource)
+            case document(DocumentSource, CacheControl? = nil)
 
             // Custom encoding to handle different cases
             public func encode(to encoder: Encoder) throws {
                var container = encoder.container(keyedBy: CodingKeys.self)
                switch self {
-               case .text(let text):
+               case .text(let text, let cacheControl):
                   try container.encode("text", forKey: .type)
                   try container.encode(text, forKey: .text)
-               case .image(let source):
+                  if let cacheControl {
+                     try container.encode(cacheControl, forKey: .cacheControl)
+                  }
+               case .image(let source, let cacheControl):
                   try container.encode("image", forKey: .type)
                   try container.encode(source, forKey: .source)
-               case .document(let source):
+                  if let cacheControl {
+                     try container.encode(cacheControl, forKey: .cacheControl)
+                  }
+               case .document(let source, let cacheControl):
                   try container.encode("document", forKey: .type)
                   try container.encode(source, forKey: .source)
+                  if let cacheControl {
+                     try container.encode(cacheControl, forKey: .cacheControl)
+                  }
                case .toolUse(let id, let name, let input):
                    try container.encode("tool_use", forKey: .type)
                    try container.encode(id, forKey: .id)
