@@ -13,9 +13,10 @@ import SwiftUI
 @Observable class MessageFunctionCallingObservable {
    
    let service: AnthropicService
-   var errorMessage: String = ""
+   var errorMessage = ""
    var isLoading = false
-   var message: String = ""
+   var message = ""
+   var thinking = ""
    
    var toolUse: MessageResponse.Content.ToolUse?
    
@@ -36,10 +37,12 @@ import SwiftUI
             isLoading = false
             for content in message.content {
                switch content {
-               case .text(let text):
+               case .text(let text, _):
                   self.message = text
                case .toolUse(let toolUSe):
                   toolUse = toolUSe
+               case .thinking(let thinking):
+                  self.thinking = thinking.thinking
                }
             }
          } catch {

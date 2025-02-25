@@ -34,22 +34,10 @@ public struct MessageResponse: Decodable {
    ///   [{"type": "text", "text": "Hi, I'm Claude."}]
    ///   ```
    ///
-   /// The response content seamlessly follows from the last turn if the request input ends with an assistant turn. This allows for a continuous output based on the last interaction.
-   ///
-   /// - Example Input:
+   /// - Example thinking:
    ///   ```
-   ///   [
-   ///     {"role": "user", "content": "What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun"},
-   ///     {"role": "assistant", "content": "The best answer is ("}
-   ///   ]
+   ///   [{"type": "thinking", "thinking": "To approach this, let's think about...", "signature": "zbbJhb..."}]
    ///   ```
-   ///
-   /// - Example Output:
-   ///   ```
-   ///   [{"type": "text", "text": "B)"}]
-   ///   ```
-   ///
-   ///   ***Beta***
    ///
    /// - Example tool use:
    ///   ```
@@ -83,18 +71,25 @@ public struct MessageResponse: Decodable {
    
    public enum Content: Codable {
       public typealias Input = [String: DynamicContent]
+      public typealias Citations = [Citation]
       
-      public struct ToolUse: Decodable {
+      public struct ToolUse: Codable {
          public let id: String
          public let name: String
-         public let input: [String: MessageResponse.Content.DynamicContent]
+         public let input: Input
       }
       
-      case text(String)
+      public struct Thinking: Codable {
+         public let thinking: String
+         public let signature: String?
+      }
+      
+      case text(String, Citations?)
       case toolUse(ToolUse)
+      case thinking(Thinking)
       
       private enum CodingKeys: String, CodingKey {
-         case type, text, id, name, input
+         case type, text, id, name, input, citations, thinking, signature
       }
       
       public enum DynamicContent: Codable {
@@ -154,12 +149,17 @@ public struct MessageResponse: Decodable {
          switch type {
          case "text":
             let text = try container.decode(String.self, forKey: .text)
-            self = .text(text)
+            let citations = try container.decodeIfPresent(Citations.self, forKey: .citations)
+            self = .text(text, citations)
          case "tool_use":
             let id = try container.decode(String.self, forKey: .id)
             let name = try container.decode(String.self, forKey: .name)
             let input = try container.decode(Input.self, forKey: .input)
             self = .toolUse(ToolUse(id: id, name: name, input: input))
+         case "thinking":
+            let thinking = try container.decode(String.self, forKey: .thinking)
+            let signature = try container.decodeIfPresent(String.self, forKey: .signature)
+            self = .thinking(Thinking(thinking: thinking, signature: signature))
          default:
             throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Invalid type value found in JSON!")
          }
@@ -168,14 +168,120 @@ public struct MessageResponse: Decodable {
       public func encode(to encoder: any Encoder) throws {
          var container = encoder.container(keyedBy: CodingKeys.self)
          switch self {
-         case .text(let text):
+         case .text(let text, let citations):
             try container.encode("text", forKey: .type)
             try container.encode(text, forKey: .text)
+            try container.encodeIfPresent(citations, forKey: .citations)
          case .toolUse(let toolUse):
             try container.encode("tool_use", forKey: .type)
             try container.encode(toolUse.id, forKey: .id)
             try container.encode(toolUse.name, forKey: .name)
             try container.encode(toolUse.input, forKey: .input)
+         case .thinking(let thinking):
+            try container.encode("thinking", forKey: .type)
+            try container.encode(thinking.thinking, forKey: .thinking)
+            try container.encodeIfPresent(thinking.signature, forKey: .signature)
+         }
+      }
+   }
+   
+   /// Claude is capable of providing detailed citations when answering questions about documents, helping you track and verify information sources in responses.
+   /// https://docs.anthropic.com/en/docs/build-with-claude/citations
+   public enum Citation: Codable {
+      case charLocation(CharLocation)
+      case pageLocation(PageLocation)
+      case contentBlockLocation(ContentBlockLocation)
+      
+      private enum CodingKeys: String, CodingKey {
+         case type, citedText, documentIndex, documentTitle
+         case startCharIndex, endCharIndex
+         case startPageNumber, endPageNumber
+         case startBlockIndex, endBlockIndex
+      }
+      
+      public struct CharLocation: Codable {
+         public let citedText: String?
+         public let documentIndex: Int?
+         public let documentTitle: String?
+         public let startCharIndex: Int?
+         public let endCharIndex: Int?
+      }
+      
+      public struct PageLocation: Codable {
+         public let citedText: String?
+         public let documentIndex: Int?
+         public let documentTitle: String?
+         public let startPageNumber: Int?
+         public let endPageNumber: Int?
+      }
+      
+      public struct ContentBlockLocation: Codable {
+         public let citedText: String?
+         public let documentIndex: Int?
+         public let documentTitle: String?
+         public let startBlockIndex: Int?
+         public let endBlockIndex: Int?
+      }
+      
+      public init(from decoder: Decoder) throws {
+         let container = try decoder.container(keyedBy: CodingKeys.self)
+         let type = try container.decode(String.self, forKey: .type)
+         
+         switch type {
+         case "char_location":
+            self = .charLocation(CharLocation(
+               citedText: try container.decodeIfPresent(String.self, forKey: .citedText),
+               documentIndex: try container.decodeIfPresent(Int.self, forKey: .documentIndex),
+               documentTitle: try container.decodeIfPresent(String.self, forKey: .documentTitle),
+               startCharIndex: try container.decodeIfPresent(Int.self, forKey: .startCharIndex),
+               endCharIndex: try container.decodeIfPresent(Int.self, forKey: .endCharIndex)
+            ))
+         case "page_location":
+            self = .pageLocation(PageLocation(
+               citedText: try container.decodeIfPresent(String.self, forKey: .citedText),
+               documentIndex: try container.decodeIfPresent(Int.self, forKey: .documentIndex),
+               documentTitle: try container.decodeIfPresent(String.self, forKey: .documentTitle),
+               startPageNumber: try container.decodeIfPresent(Int.self, forKey: .startPageNumber),
+               endPageNumber: try container.decodeIfPresent(Int.self, forKey: .endPageNumber)
+            ))
+         case "content_block_location":
+            self = .contentBlockLocation(ContentBlockLocation(
+               citedText: try container.decodeIfPresent(String.self, forKey: .citedText),
+               documentIndex: try container.decodeIfPresent(Int.self, forKey: .documentIndex),
+               documentTitle: try container.decodeIfPresent(String.self, forKey: .documentTitle),
+               startBlockIndex: try container.decodeIfPresent(Int.self, forKey: .startBlockIndex),
+               endBlockIndex: try container.decodeIfPresent(Int.self, forKey: .endBlockIndex)
+            ))
+         default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Invalid citation type!")
+         }
+      }
+      
+      public func encode(to encoder: Encoder) throws {
+         var container = encoder.container(keyedBy: CodingKeys.self)
+         
+         switch self {
+         case .charLocation(let location):
+            try container.encode("char_location", forKey: .type)
+            try container.encodeIfPresent(location.citedText, forKey: .citedText)
+            try container.encodeIfPresent(location.documentIndex, forKey: .documentIndex)
+            try container.encodeIfPresent(location.documentTitle, forKey: .documentTitle)
+            try container.encodeIfPresent(location.startCharIndex, forKey: .startCharIndex)
+            try container.encodeIfPresent(location.endCharIndex, forKey: .endCharIndex)
+         case .pageLocation(let location):
+            try container.encode("page_location", forKey: .type)
+            try container.encodeIfPresent(location.citedText, forKey: .citedText)
+            try container.encodeIfPresent(location.documentIndex, forKey: .documentIndex)
+            try container.encodeIfPresent(location.documentTitle, forKey: .documentTitle)
+            try container.encodeIfPresent(location.startPageNumber, forKey: .startPageNumber)
+            try container.encodeIfPresent(location.endPageNumber, forKey: .endPageNumber)
+         case .contentBlockLocation(let location):
+            try container.encode("content_block_location", forKey: .type)
+            try container.encodeIfPresent(location.citedText, forKey: .citedText)
+            try container.encodeIfPresent(location.documentIndex, forKey: .documentIndex)
+            try container.encodeIfPresent(location.documentTitle, forKey: .documentTitle)
+            try container.encodeIfPresent(location.startBlockIndex, forKey: .startBlockIndex)
+            try container.encodeIfPresent(location.endBlockIndex, forKey: .endBlockIndex)
          }
       }
    }
@@ -186,11 +292,59 @@ public struct MessageResponse: Decodable {
       
       /// The number of output tokens which were used.
       public let outputTokens: Int
-       
-      /// Tokens written to the cache when creating a new entry.
+      
+      /// The number of thinking tokens which were used (when thinking mode is enabled).
+      public let thinkingTokens: Int?
+      
+      /// [Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#how-can-i-track-the-effectiveness-of-my-caching-strategy)
+      /// You can monitor cache performance using the cache_creation_input_tokens and cache_read_input_tokens fields in the API response.
       public let cacheCreationInputTokens: Int?
-       
-      /// Tokens retrieved from the cache for this request.
+      
+      /// [Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#how-can-i-track-the-effectiveness-of-my-caching-strategy)
+      /// You can monitor cache performance using the cache_creation_input_tokens and cache_read_input_tokens fields in the API response.
       public let cacheReadInputTokens: Int?
+   }
+}
+
+/// Extension to provide convenient access to thinking content
+extension MessageResponse {
+   
+   /// Extracts all thinking content blocks from the response
+   /// - Returns: Array of thinking content or empty array if none found
+   public func getThinkingContent() -> [Content.Thinking] {
+      return content.compactMap { contentBlock in
+         if case .thinking(let thinking) = contentBlock {
+            return thinking
+         }
+         return nil
+      }
+   }
+   
+   /// Get the first thinking content block from the response
+   /// - Returns: The first thinking content block or nil if none exists
+   public func getFirstThinkingContent() -> Content.Thinking? {
+      return getThinkingContent().first
+   }
+   
+   /// Get the combined thinking content as a single string
+   /// - Returns: All thinking content concatenated into a single string, or nil if no thinking content exists
+   public func getCombinedThinkingContent() -> String? {
+      let thinkingBlocks = getThinkingContent()
+      if thinkingBlocks.isEmpty {
+         return nil
+      }
+      
+      return thinkingBlocks.map { $0.thinking }.joined(separator: "\n\n")
+   }
+   
+   /// Determines if the response contains any thinking content
+   /// - Returns: True if thinking content exists, false otherwise
+   public var hasThinkingContent: Bool {
+      return content.contains { contentBlock in
+         if case .thinking = contentBlock {
+            return true
+         }
+         return false
+      }
    }
 }

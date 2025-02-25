@@ -14,18 +14,15 @@ struct DefaultAnthropicService: AnthropicService {
    let apiKey: String
    let apiVersion: String
    let basePath: String
+   let betaHeaders: [String]?
    /// Set this flag to TRUE if you need to print request events in DEBUG builds.
    private let debugEnabled: Bool
    
-   private static let betaMaxTokens35Sonnet = "max-tokens-3-5-sonnet-2024-07-15"
-   private static let betaPromptCaching = "prompt-caching-2024-07-31"
-   
-   private static let betaHeaders = [betaMaxTokens35Sonnet, betaPromptCaching]
-
    init(
       apiKey: String,
       apiVersion: String = "2023-06-01",
       basePath: String,
+      betaHeaders: [String]?,
       configuration: URLSessionConfiguration = .default,
       debugEnabled: Bool)
    {
@@ -36,6 +33,7 @@ struct DefaultAnthropicService: AnthropicService {
       self.apiKey = apiKey
       self.apiVersion = apiVersion
       self.basePath = basePath
+      self.betaHeaders = betaHeaders
       self.debugEnabled = debugEnabled
    }
    
@@ -47,7 +45,7 @@ struct DefaultAnthropicService: AnthropicService {
    {
       var localParameter = parameter
       localParameter.stream = false
-      let request = try AnthropicAPI(base: basePath, apiPath: .messages).request(apiKey: apiKey, version: apiVersion, method: .post, params: localParameter, betaHeaders: Self.betaHeaders)
+      let request = try AnthropicAPI(base: basePath, apiPath: .messages).request(apiKey: apiKey, version: apiVersion, method: .post, params: localParameter, betaHeaders: betaHeaders)
       return try await fetch(type: MessageResponse.self, with: request, debugEnabled: debugEnabled)
    }
    
@@ -57,8 +55,16 @@ struct DefaultAnthropicService: AnthropicService {
    {
       var localParameter = parameter
       localParameter.stream = true
-      let request = try AnthropicAPI(base: basePath, apiPath: .messages).request(apiKey: apiKey, version: apiVersion, method: .post, params: localParameter, betaHeaders: Self.betaHeaders)
+      let request = try AnthropicAPI(base: basePath, apiPath: .messages).request(apiKey: apiKey, version: apiVersion, method: .post, params: localParameter, betaHeaders: betaHeaders)
       return try await fetchStream(type: MessageStreamResponse.self, with: request, debugEnabled: debugEnabled)
+   }
+   
+   func countTokens(
+      parameter: MessageTokenCountParameter)
+      async throws -> MessageInputTokens
+   {
+      let request = try AnthropicAPI(base: basePath, apiPath: .countTokens).request(apiKey: apiKey, version: apiVersion, method: .post, params: parameter, betaHeaders: betaHeaders)
+      return try await fetch(type: MessageInputTokens.self, with: request, debugEnabled: debugEnabled)
    }
    
    /// "messages-2023-12-15"

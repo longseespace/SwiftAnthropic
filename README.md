@@ -7,6 +7,7 @@
 [![swiftui-version](https://img.shields.io/badge/swiftui-brightgreen)](https://developer.apple.com/documentation/swiftui)
 [![xcode-version](https://img.shields.io/badge/xcode-15%20-brightgreen)](https://developer.apple.com/xcode/)
 [![swift-package-manager](https://img.shields.io/badge/package%20manager-compatible-brightgreen.svg?logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNjJweCIgaGVpZ2h0PSI0OXB4IiB2aWV3Qm94PSIwIDAgNjIgNDkiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8IS0tIEdlbmVyYXRvcjogU2tldGNoIDYzLjEgKDkyNDUyKSAtIGh0dHBzOi8vc2tldGNoLmNvbSAtLT4KICAgIDx0aXRsZT5Hcm91cDwvdGl0bGU+CiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4KICAgIDxnIGlkPSJQYWdlLTEiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJHcm91cCIgZmlsbC1ydWxlPSJub256ZXJvIj4KICAgICAgICAgICAgPHBvbHlnb24gaWQ9IlBhdGgiIGZpbGw9IiNEQkI1NTEiIHBvaW50cz0iNTEuMzEwMzQ0OCAwIDEwLjY4OTY1NTIgMCAwIDEzLjUxNzI0MTQgMCA0OSA2MiA0OSA2MiAxMy41MTcyNDE0Ij48L3BvbHlnb24+CiAgICAgICAgICAgIDxwb2x5Z29uIGlkPSJQYXRoIiBmaWxsPSIjRjdFM0FGIiBwb2ludHM9IjI3IDI1IDMxIDI1IDM1IDI1IDM3IDI1IDM3IDE0IDI1IDE0IDI1IDI1Ij48L3BvbHlnb24+CiAgICAgICAgICAgIDxwb2x5Z29uIGlkPSJQYXRoIiBmaWxsPSIjRUZDNzVFIiBwb2ludHM9IjEwLjY4OTY1NTIgMCAwIDE0IDYyIDE0IDUxLjMxMDM0NDggMCI+PC9wb2x5Z29uPgogICAgICAgICAgICA8cG9seWdvbiBpZD0iUmVjdGFuZ2xlIiBmaWxsPSIjRjdFM0FGIiBwb2ludHM9IjI3IDAgMzUgMCAzNyAxNCAyNSAxNCI+PC9wb2x5Z29uPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+)](https://github.com/apple/swift-package-manager)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-048754?logo=buymeacoffee)](https://buymeacoffee.com/jamesrochabrun)
 
 An open-source Swift package designed for effortless interaction with [Anthropic's public API](https://docs.anthropic.com/claude/reference/getting-started-with-the-api).
 
@@ -28,8 +29,13 @@ An open-source Swift package designed for effortless interaction with [Anthropic
 - [Text Completion Stream](#text-completion-stream)
 - [Message](#message)
    - [Function Calling](#function-calling)
+   - [Prompt Caching](#prompt-caching)
 - [Message Stream](#message-stream)
 - [Vision](#vision)
+- [PDF Support](#pdf-support)
+- [Citations](#citations)
+- [Count Tokens](#count-tokens)
+- [Extended Thinking](#extended-thinking)
 - [Examples](#demo)
 
 ## Getting an API Key
@@ -91,6 +97,14 @@ let apiKey = "YOUR_ANTHROPIC_API_KEY"
 let apiVersion = "YOUR_ANTHROPIC_API_VERSION" e.g: "2023-06-01".
 let basePath = "https://myservice.com"
 let service = AnthropicServiceFactory.service(apiKey: apiKey, apiVersion: apiVersion, basePath: basePath)
+```
+
+For Beta features you MUST provide the Beta headers like this:
+
+```swift
+let apiKey = "YOUR_ANTHROPIC_API_KEY"
+let betaHeaders = [prompt-caching-2024-07-31", "max-tokens-3-5-sonnet-2024-07-15"]
+let service = AnthropicServiceFactory.service(apiKey: apiKey, betaHeaders: betaHeaders)
 ```
 
 ### Text Completion
@@ -210,49 +224,49 @@ public struct MessageParameter: Encodable {
    /// The model that will complete your prompt.
    // As we improve Claude, we develop new versions of it that you can query. The model parameter controls which version of Claude responds to your request. Right now we offer two model families: Claude, and Claude Instant. You can use them by setting model to "claude-2.1" or "claude-instant-1.2", respectively.
    /// See [models](https://docs.anthropic.com/claude/reference/selecting-a-model) for additional details and options.
-   let model: String
+   public let model: String
    
    /// Input messages.
    /// Our models are trained to operate on alternating user and assistant conversational turns. When creating a new Message, you specify the prior conversational turns with the messages parameter, and the model then generates the next Message in the conversation.
    /// Each input message must be an object with a role and content. You can specify a single user-role message, or you can include multiple user and assistant messages. The first message must always use the user role.
    /// If the final message uses the assistant role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.
-   let messages: [Message]
+   public let messages: [Message]
    
    /// The maximum number of tokens to generate before stopping.
    /// Note that our models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate.
    /// Different models have different maximum values for this parameter. See [input and output](https://docs.anthropic.com/claude/reference/input-and-output-sizes) sizes for details.
-   let maxTokens: Int
+   public let maxTokens: Int
    
    /// System prompt.
    /// A system prompt is a way of providing context and instructions to Claude, such as specifying a particular goal or role. See our [guide to system prompts](https://docs.anthropic.com/claude/docs/how-to-use-system-prompts).
-   let system: String?
+   /// System role can be either a simple String or an array of objects, use the objects array for prompt caching.
+   /// [Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
+   public let system: System?
    
    /// An object describing metadata about the request.
-   let metadata: MetaData?
+   public let metadata: MetaData?
    
    /// Custom text sequences that will cause the model to stop generating.
    /// Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn".
    /// If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence.
-   let stopSequences: [String]?
+   public let stopSequences: [String]?
    
    /// Whether to incrementally stream the response using server-sent events.
    /// See [streaming](https://docs.anthropic.com/claude/reference/messages-streaming for details.
-   var stream: Bool
+   public var stream: Bool
    
    /// Amount of randomness injected into the response.
    /// Defaults to 1. Ranges from 0 to 1. Use temp closer to 0 for analytical / multiple choice, and closer to 1 for creative and generative tasks.
-   let temperature: Double?
+   public let temperature: Double?
    
    /// Only sample from the top K options for each subsequent token.
    /// Used to remove "long tail" low probability responses. [Learn more technical details here](https://towardsdatascience.com/how-to-sample-from-language-models-682bceb97277).
-   let topK: Int?
+   public let topK: Int?
    
    /// Use nucleus sampling.
    /// In nucleus sampling, we compute the cumulative distribution over all the options for each subsequent token in decreasing probability order and cut it off once it reaches a particular probability specified by top_p. You should either alter temperature or top_p, but not both.
-   let topP: Double?
+   public let topP: Double?
    
-   /// **[beta]** Definitions of tools that the model may use.
-   ///
    /// If you include tools in your API request, the model may return tool_use content blocks that represent the model's use of those tools. You can then run those tools using the tool input generated by the model and then optionally return results back to the model using tool_result content blocks.
    ///
    /// Each tool definition includes:
@@ -262,45 +276,415 @@ public struct MessageParameter: Encodable {
    /// **description**: Optional, but strongly-recommended description of the tool.
    ///
    /// **input_schema**: JSON schema for the tool input shape that the model will produce in tool_use output content blocks.
+   ///
+   /// **cacheControl**: Prompt Caching
    let tools: [Tool]?
    
-   struct Message: Encodable {
-      let role: String
-      let content: Content
+   ///   Forcing tool use
+   ///
+   ///    In some cases, you may want Claude to use a specific tool to answer the user’s question, even if Claude thinks it can provide an answer without using a tool. You can do this by specifying the tool in the tool_choice field like so:
+   ///
+   ///    tool_choice = {"type": "tool", "name": "get_weather"}
+   ///    When working with the tool_choice parameter, we have three possible options:
+   ///
+   ///    `auto` allows Claude to decide whether to call any provided tools or not. This is the default value.
+   ///    `any` tells Claude that it must use one of the provided tools, but doesn’t force a particular tool.
+   ///    `tool` allows us to force Claude to always use a particular tool.
+   let toolChoice: ToolChoice?
+   
+   public enum System: Encodable {
+      case text(String)
+      case list([Cache])
       
-      enum Role {
+      public func encode(to encoder: Encoder) throws {
+         var container = encoder.singleValueContainer()
+         switch self {
+         case .text(let string):
+            try container.encode(string)
+         case .list(let objects):
+            try container.encode(objects)
+         }
+      }
+   }
+   
+   public struct Message: Encodable {
+      
+      public let role: String
+      public let content: Content
+      
+      public enum Role: String {
          case user
          case assistant
       }
       
       public enum Content: Encodable {
+         
          case text(String)
          case list([ContentObject])
+         
+         // Custom encoding to handle different cases
+         public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .text(let text):
+               try container.encode(text)
+            case .list(let objects):
+               try container.encode(objects)
+            }
+         }
          
          public enum ContentObject: Encodable {
             case text(String)
             case image(ImageSource)
+            case toolUse(String, String, MessageResponse.Content.Input)
+            case toolResult(String, String)
+            case cache(Cache)
+
+            // Custom encoding to handle different cases
+            public func encode(to encoder: Encoder) throws {
+               var container = encoder.container(keyedBy: CodingKeys.self)
+               switch self {
+               case .text(let text):
+                  try container.encode("text", forKey: .type)
+                  try container.encode(text, forKey: .text)
+               case .image(let source):
+                  try container.encode("image", forKey: .type)
+                  try container.encode(source, forKey: .source)
+               case .toolUse(let id, let name, let input):
+                   try container.encode("tool_use", forKey: .type)
+                   try container.encode(id, forKey: .id)
+                   try container.encode(name, forKey: .name)
+                   try container.encode(input, forKey: .input)
+               case .toolResult(let toolUseId, let content):
+                   try container.encode("tool_result", forKey: .type)
+                   try container.encode(toolUseId, forKey: .toolUseId)
+                   try container.encode(content, forKey: .content)
+               case .cache(let cache):
+                   try container.encode(cache.type.rawValue, forKey: .type)
+                   try container.encode(cache.text, forKey: .text)
+                   if let cacheControl = cache.cacheControl {
+                       try container.encode(cacheControl, forKey: .cacheControl)
+                   }
+               }
+            }
             
-            public struct ImageSource: Encodable {
-               let type: String
-               let mediaType: String
-               let data: String
+            enum CodingKeys: String, CodingKey {
+               case type
+               case source
+               case text
+               case id
+               case name
+               case input
+               
+               case toolUseId = "tool_use_id"
+               case content
+               case cacheControl = "cache_control"
+            }
+         }
+         
+         public struct ImageSource: Encodable {
+            
+            public let type: String
+            public let mediaType: String
+            public let data: String
+            
+            public enum MediaType: String, Encodable {
+               case jpeg = "image/jpeg"
+               case png = "image/png"
+               case gif = "image/gif"
+               case webp = "image/webp"
+            }
+            
+            public enum ImageSourceType: String, Encodable {
+               case base64
+            }
+            
+            public init(
+               type: ImageSourceType,
+               mediaType: MediaType,
+               data: String)
+            {
+               self.type = type.rawValue
+               self.mediaType = mediaType.rawValue
+               self.data = data
+            }
          }
       }
       
       public init(
-         role: String,
-         content: String)
+         role: Role,
+         content: Content)
       {
-         self.role = role
+         self.role = role.rawValue
          self.content = content
       }
    }
    
-   struct MetaData: Encodable {
+   public struct MetaData: Encodable {
       // An external identifier for the user who is associated with the request.
       // This should be a uuid, hash value, or other opaque identifier. Anthropic may use this id to help detect abuse. Do not include any identifying information such as name, email address, or phone number.
-      let userId: UUID
+      public let userId: UUID
+   }
+   
+   public struct ToolChoice: Codable {
+      public enum ToolType: String, Codable {
+         case tool
+         case auto
+         case any
+      }
+      
+      let type: ToolType
+      let name: String?
+      
+      public init(
+         type: ToolType,
+         name: String? = nil)
+      {
+         self.type = type
+         self.name = name
+      }
+   }
+   
+   public struct Tool: Codable, Equatable {
+      
+      /// The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
+      public let name: String
+      /// A description of what the function does, used by the model to choose when and how to call the function.
+      public let description: String?
+      /// The parameters the functions accepts, described as a JSON Schema object. See the [guide](https://docs.anthropic.com/en/docs/build-with-claude/tool-use) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
+      /// To describe a function that accepts no parameters, provide the value `{"type": "object", "properties": {}}`.
+      public let inputSchema: JSONSchema?
+      /// [Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#caching-tool-definitions)
+      public let cacheControl: CacheControl?
+      
+      public struct JSONSchema: Codable, Equatable {
+         
+         public let type: JSONType
+         public let properties: [String: Property]?
+         public let required: [String]?
+         public let pattern: String?
+         public let const: String?
+         public let enumValues: [String]?
+         public let multipleOf: Int?
+         public let minimum: Int?
+         public let maximum: Int?
+         
+         private enum CodingKeys: String, CodingKey {
+            case type, properties, required, pattern, const
+            case enumValues = "enum"
+            case multipleOf, minimum, maximum
+         }
+         
+         public struct Property: Codable, Equatable {
+            
+            public let type: JSONType
+            public let description: String?
+            public let format: String?
+            public let items: Items?
+            public let required: [String]?
+            public let pattern: String?
+            public let const: String?
+            public let enumValues: [String]?
+            public let multipleOf: Int?
+            public let minimum: Double?
+            public let maximum: Double?
+            public let minItems: Int?
+            public let maxItems: Int?
+            public let uniqueItems: Bool?
+            
+            private enum CodingKeys: String, CodingKey {
+               case type, description, format, items, required, pattern, const
+               case enumValues = "enum"
+               case multipleOf, minimum, maximum
+               case minItems, maxItems, uniqueItems
+            }
+            
+            public init(
+               type: JSONType,
+               description: String? = nil,
+               format: String? = nil,
+               items: Items? = nil,
+               required: [String]? = nil,
+               pattern: String? = nil,
+               const: String? = nil,
+               enumValues: [String]? = nil,
+               multipleOf: Int? = nil,
+               minimum: Double? = nil,
+               maximum: Double? = nil,
+               minItems: Int? = nil,
+               maxItems: Int? = nil,
+               uniqueItems: Bool? = nil)
+            {
+               self.type = type
+               self.description = description
+               self.format = format
+               self.items = items
+               self.required = required
+               self.pattern = pattern
+               self.const = const
+               self.enumValues = enumValues
+               self.multipleOf = multipleOf
+               self.minimum = minimum
+               self.maximum = maximum
+               self.minItems = minItems
+               self.maxItems = maxItems
+               self.uniqueItems = uniqueItems
+            }
+         }
+         
+         public enum JSONType: String, Codable {
+            case integer = "integer"
+            case string = "string"
+            case boolean = "boolean"
+            case array = "array"
+            case object = "object"
+            case number = "number"
+            case `null` = "null"
+         }
+         
+         public struct Items: Codable, Equatable {
+            
+            public let type: JSONType
+            public let properties: [String: Property]?
+            public let pattern: String?
+            public let const: String?
+            public let enumValues: [String]?
+            public let multipleOf: Int?
+            public let minimum: Double?
+            public let maximum: Double?
+            public let minItems: Int?
+            public let maxItems: Int?
+            public let uniqueItems: Bool?
+            
+            private enum CodingKeys: String, CodingKey {
+               case type, properties, pattern, const
+               case enumValues = "enum"
+               case multipleOf, minimum, maximum, minItems, maxItems, uniqueItems
+            }
+            
+            public init(
+               type: JSONType,
+               properties: [String : Property]? = nil,
+               pattern: String? = nil,
+               const: String? = nil,
+               enumValues: [String]? = nil,
+               multipleOf: Int? = nil,
+               minimum: Double? = nil,
+               maximum: Double? = nil,
+               minItems: Int? = nil,
+               maxItems: Int? = nil,
+               uniqueItems: Bool? = nil)
+            {
+               self.type = type
+               self.properties = properties
+               self.pattern = pattern
+               self.const = const
+               self.enumValues = enumValues
+               self.multipleOf = multipleOf
+               self.minimum = minimum
+               self.maximum = maximum
+               self.minItems = minItems
+               self.maxItems = maxItems
+               self.uniqueItems = uniqueItems
+            }
+         }
+         
+         public init(
+            type: JSONType,
+            properties: [String : Property]? = nil,
+            required: [String]? = nil,
+            pattern: String? = nil,
+            const: String? = nil,
+            enumValues: [String]? = nil,
+            multipleOf: Int? = nil,
+            minimum: Int? = nil,
+            maximum: Int? = nil)
+         {
+            self.type = type
+            self.properties = properties
+            self.required = required
+            self.pattern = pattern
+            self.const = const
+            self.enumValues = enumValues
+            self.multipleOf = multipleOf
+            self.minimum = minimum
+            self.maximum = maximum
+         }
+      }
+      
+      public init(
+         name: String,
+         description: String?,
+         inputSchema: JSONSchema?,
+         cacheControl: CacheControl? = nil)
+      {
+         self.name = name
+         self.description = description
+         self.inputSchema = inputSchema
+         self.cacheControl = cacheControl
+      }
+   }
+   
+   /// [Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
+   public struct Cache: Encodable {
+      let type: CacheType
+      let text: String
+      let cacheControl: CacheControl?
+      
+      public init(
+         type: CacheType = .text,
+         text: String,
+         cacheControl: CacheControl?)
+      {
+         self.type = type
+         self.text = text
+         self.cacheControl = cacheControl
+      }
+      
+      public enum CacheType: String, Encodable {
+         case text
+      }
+   }
+   
+   public struct CacheControl: Codable, Equatable {
+      
+      let type: CacheControlType
+      
+      public init(type: CacheControlType) {
+         self.type = type
+      }
+      
+      public enum CacheControlType: String, Codable {
+         case ephemeral
+      }
+   }
+   
+   public init(
+      model: Model,
+      messages: [Message],
+      maxTokens: Int,
+      system: System? = nil,
+      metadata: MetaData? = nil,
+      stopSequences: [String]? = nil,
+      stream: Bool = false,
+      temperature: Double? = nil,
+      topK: Int? = nil,
+      topP: Double? = nil,
+      tools: [Tool]? = nil,
+      toolChoice: ToolChoice? = nil)
+   {
+      self.model = model.value
+      self.messages = messages
+      self.maxTokens = maxTokens
+      self.system = system
+      self.metadata = metadata
+      self.stopSequences = stopSequences
+      self.stream = stream
+      self.temperature = temperature
+      self.topK = topK
+      self.topP = topP
+      self.tools = tools
+      self.toolChoice = toolChoice
    }
 }
 ```
@@ -395,6 +779,12 @@ public struct MessageResponse: Decodable {
       
       /// The number of output tokens which were used.
       public let outputTokens: Int
+      
+      /// [Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#how-can-i-track-the-effectiveness-of-my-caching-strategy)
+      /// You can monitor cache performance using the cache_creation_input_tokens and cache_read_input_tokens fields in the API response.
+      
+      public let cacheCreationInputTokens: Int?
+      public let cacheReadInputTokens: Int?
    }
 }
 ```
@@ -410,15 +800,6 @@ let message = try await service.createMessage(parameters)
 ### Function Calling
 
 Tool use (function calling). Claude is capable of interacting with external client-side tools and functions, allowing you to equip Claude with your own custom tools to perform a wider variety of tasks.
-
-<span style="background-color: #D3D3D3">
-🎉
-Tool use public beta
-
-Anthropic is excited to announce that tool use is now in public beta! To access this feature, you'll need to include the anthropic-beta: tools-2024-04-04 header in your API requests.
-
-They will be iterating on this open beta over the coming weeks, so feel free to provide feedback using this [form](https://forms.gle/BFnYc6iCkWoRzFgk7).
-</span>
 
 Here's an example of how to provide tools to Claude using the Messages API:
 
@@ -441,14 +822,6 @@ let parameters = MessageParameter(model: .claude3Opus, messages: [messageParamet
 
 let message = try await service.createMessage(parameters)
 ```
-
-<span style="background-color: #D3D3D3">
-⚠️ Please note that during the beta period:
-
-Streaming (stream=true) is not yet supported. They plan to add streaming support in a future beta version.
-While the feature is production-ready, they may introduce multiple beta versions before the final release.
-Tool use is not yet available on third-party platforms like Vertex AI or AWS Bedrock, but is coming soon.
-</span>
 
 When Claude decides to use one of the tools you've provided, it will return a response with a stop_reason of tool_use and one or more tool_use content blocks in the API response that include:
 
@@ -478,6 +851,115 @@ Here's an example API response with a tool_use content block:
   ]
 }
 ```
+
+*Disabling parallel tool use*
+
+By default, Claude may use multiple tools to answer a user query. You can disable this behavior by setting disable_parallel_tool_use=true in the tool_choice field.
+
+When tool_choice type is auto, this ensures that Claude uses at most one tool
+When tool_choice type is any or tool, this ensures that Claude uses exactly one tool
+
+Usage
+```swift
+let toolChoice = ToolChoice(
+    type: .auto,
+    disableParallelToolUse: true
+)
+
+let messageParameter = MessageParameter(
+    model: model,
+    messages: messages,
+    maxTokens: maxTokens,
+    toolChoice: toolChoice
+    // ... other parameters
+)
+```
+
+🚀 Tool use with stream enabled, is also supported. Please visit the [demo project for details](https://github.com/jamesrochabrun/SwiftAnthropic/tree/main/Examples/SwiftAnthropicExample/SwiftAnthropicExample/FunctionCalling)
+
+### Prompt Caching
+
+Prompt Caching is a powerful feature that optimizes your API usage by allowing resuming from specific prefixes in your prompts. This approach significantly reduces processing time and costs for repetitive tasks or prompts with consistent elements.
+For general guidance in Prompt Caching please visit the official [Anthropic Documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching).
+
+<span style="background-color: #D3D3D3">
+
+/// Copied from Anthropic [website](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#large-context-caching-example))
+
+Prompt Caching is in beta
+
+Prompt Caching is now in public beta! To access this feature, you’ll need to include the anthropic-beta: `prompt-caching-2024-07-31` header in your API requests.
+
+</span>
+
+How to use it with `SwiftAnthropic`:
+
+You can use it as a `System` role:
+
+```json
+    "system": [
+      {
+        "type": "text", 
+        "text": "You are an AI assistant tasked with analyzing literary works. Your goal is to provide insightful commentary on themes, characters, and writing style.\n"
+      },
+      {
+        "type": "text", 
+        "text": "<the entire contents of Pride and Prejudice>",
+        "cache_control": {"type": "ephemeral"}
+      }
+    ],
+```
+
+The above is a system role, it translates to this in `SwiftAnthropic`
+
+```swift
+let systemPrompt = "You are an AI assistant tasked with analyzing literary works. Your goal is to provide insightful commentary on themes, characters, and writing style"
+let someLargePieceOfContentLikeABook: String = "<the entire contents of Pride and Prejudice>"
+let systemContent = MessageParameter.Cache(text: systemPrompt, cacheControl: nil)
+let cache = MessageParameter.Cache(text: someLargePieceOfContentLikeABook, cacheControl:  .init(type: .ephemeral))
+let usersMessage = MessageParameter.Message(role: .user, content: .text("Analyze the major themes in Pride and Prejudice."))
+let parameters = MessageParameter(
+   model: .claude35Sonnet,
+   messages: [usersMessage],
+   maxTokens: 1024,
+   system: .list([
+      systemContent,
+      cache
+   ]))
+let request = try await service.createMessage(parameters)                
+```
+
+Using Prompt Caching in a Message:
+
+```swift
+let usersPrompt = "Summarize this transcription"
+let videoTranscription = "<Some_Long_Text>"
+let usersMessageContent = MessageParameter.Message.Content.ContentObject.text(usersPrompt)
+let cache = MessageParameter.Message.Content.ContentObject.cache(.init(text: videoTranscription, cacheControl: .init(type: .ephemeral)))
+let usersMessage = MessageParameter.Message(role: .user, content: .list([usersMessageContent, cache]))
+      let parameters = MessageParameter(
+         model: .claude35Sonnet,
+         messages: [usersMessage],
+         maxTokens: 1024,
+         system: .text("You are an AI assistant tasked with analyzing literary works"))
+```
+
+Using Prompt Caching in a Tool:
+
+```swift
+MessageParameter.Tool(
+   name: self.rawValue,
+   description: "Get the current weather in a given location",
+   inputSchema: .init(
+                  type: .object,
+                  properties: [
+                     "location": .init(type: .string, description: "The city and state, e.g. San Francisco, CA"),
+                     "unit": .init(type: .string, description: "The unit of temperature, either celsius or fahrenheit")
+                  ],
+                  required: ["location"]),
+   cacheControl: .init(type: .ephemeral))
+```
+
 
 Swift Response
 ```swift
@@ -705,6 +1187,492 @@ You can also run the Demo project located on the [Examples](https://github.com/j
 
 <img width="350" alt="Anthropic" src="https://github.com/jamesrochabrun/SwiftAnthropic/assets/5378604/c2d39617-e8ab-44aa-ac2d-f01d94bb8bfc">
 
+### PDF Support
+
+Claude can now analyze PDFs through the Messages API. Here's a simple example:
+
+```swift
+let maxTokens = 1024
+let prompt = "Please analyze this document"
+
+// Load PDF data
+let pdfData = // your PDF data
+let base64PDF = pdfData.base64EncodedString()
+
+// Create document source
+let documentSource = try MessageParameter.Message.Content.DocumentSource.pdf(base64Data: base64PDF)
+
+// Create message with document and prompt
+let message = MessageParameter.Message(
+    role: .user,
+    content: .list([
+        .document(documentSource),
+        .text(prompt)
+    ])
+)
+
+// Create parameters
+let parameters = MessageParameter(
+    model: .claude35Sonnet,
+    messages: [message],
+    maxTokens: maxTokens
+)
+
+// Send request
+let response = try await service.createMessage(parameters)
+```
+
+### Citation Support
+
+```swift
+let maxTokens = 1024
+let prompt = "Please analyze this document"
+
+// Load PDF data
+let pdfData = // your PDF data
+let base64PDF = pdfData.base64EncodedString()
+
+// Create document source
+let documentSource = try MessageParameter.Message.Content.DocumentSource.pdf(base64Data: base64PDF, citations: .init(enabled: true))
+
+// Create message with document and prompt
+let message = MessageParameter.Message(
+    role: .user,
+    content: .list([
+        .document(documentSource),
+        .text(prompt)
+    ])
+)
+
+// Create parameters
+let parameters = MessageParameter(
+    model: .claude35Sonnet,
+    messages: [message],
+    maxTokens: maxTokens
+)
+
+// Send request
+let response = try await service.streamMessage(parameters)
+```
+
+For more information on how to use Citations in your app, please visit the official [Anthropic documentation](https://docs.anthropic.com/en/docs/build-with-claude/citations).
+
+### Count Tokens
+
+Parameters:
+```swift
+public struct MessageTokenCountParameter: Encodable {
+    /// The model that will complete your prompt.
+    /// See [models](https://docs.anthropic.com/claude/reference/selecting-a-model) for additional details and options.
+    public let model: String
+    
+    /// Input messages.
+    /// Our models are trained to operate on alternating user and assistant conversational turns.
+    /// Each input message must be an object with a role and content.
+    public let messages: [MessageParameter.Message]
+    
+    /// System prompt.
+    /// A system prompt is a way of providing context and instructions to Claude.
+    /// System role can be either a simple String or an array of objects, use the objects array for prompt caching.
+    public let system: MessageParameter.System?
+    
+    /// Tools that can be used in the messages
+    public let tools: [MessageParameter.Tool]?
+}
+```
+
+Response:
+```swift
+public struct MessageInputTokens: Decodable {
+   
+   /// The total number of tokens across the provided list of messages, system prompt, and tools.
+   public let inputTokens: Int
+}
+```
+
+Usage:
+```swift
+let messageParameter = MessageParameter.Message(role: .user, content: .text("Hello, Claude"))
+let parameters = MessageTokenCountParameter(
+    model: .claude3Sonnet,
+    messages: [messageParameter]
+)
+let tokenCount = try await service.countTokens(parameter: parameters)
+print("Input tokens: \(tokenCount.inputTokens)")
+```
+
+## Extended Thinking
+
+Claude 3.7 Sonnet offers enhanced reasoning capabilities with extended thinking mode. This feature allows Claude to perform step-by-step reasoning before providing a final answer, improving response quality for complex tasks.
+
+#### Extended Thinking Parameters
+
+```swift
+public struct Thinking: Encodable {
+    /// The type of thinking, currently only "enabled" is supported
+    let type: ThinkingType
+    /// Token budget allocated for extended thinking (maximum number of tokens to use for thinking)
+    let budgetTokens: Int
+    
+    public enum ThinkingType: String, Encodable {
+        case enabled
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case budgetTokens = "budget_tokens"
+    }
+    
+    public init(type: ThinkingType = .enabled, budgetTokens: Int) {
+        self.type = type
+        self.budgetTokens = budgetTokens
+    }
+}
+```
+
+#### Basic Non-Streaming Example
+
+```swift
+// Create a message with thinking enabled
+let userMessage = MessageParameter.Message(
+    role: .user,
+    content: .text("What would happen if we doubled the Earth's gravity overnight?")
+)
+
+// Enable thinking with a budget of 16,000 tokens
+let parameters = MessageParameter(
+    model: .claude37Sonnet,
+    messages: [userMessage],
+    maxTokens: 4000,
+    thinking: .init(budgetTokens: 16000)
+)
+
+// Make API call
+let response = try await service.createMessage(parameters)
+
+// Process the response
+var thinkingContent = ""
+var responseText = ""
+
+for content in response.content {
+    switch content {
+    case .text(let text, _):
+        responseText = text
+        print("Final answer: \(text)")
+    case .thinking(let thinking):
+        thinkingContent = thinking.thinking
+        print("Thinking process: \(thinkingContent)")
+    case .redactedThinking(_):
+        print("Some thinking was redacted for safety reasons")
+    default:
+        break
+    }
+}
+```
+
+#### Multi-Turn Conversation (Non-Streaming)
+
+For multi-turn conversations, include the thinking blocks as part of the assistant message in the conversation history:
+
+```swift
+// Conversation history
+var messages: [MessageParameter.Message] = []
+
+// First user message
+let firstUserMessage = MessageParameter.Message(
+    role: .user,
+    content: .text("What would happen if we doubled the Earth's gravity overnight?")
+)
+messages.append(firstUserMessage)
+
+// Create parameters with thinking enabled
+let parameters = MessageParameter(
+    model: .claude37Sonnet,
+    messages: messages,
+    maxTokens: 4000,
+    thinking: .init(budgetTokens: 16000)
+)
+
+// Make API call
+let response = try await service.createMessage(parameters)
+
+// Process the response and extract thinking blocks and text
+var thinkingBlocks: [MessageParameter.Message.Content.ContentObject] = []
+var responseText = ""
+
+for content in response.content {
+    switch content {
+    case .text(let text, _):
+        responseText = text
+    case .thinking(let thinking):
+        if let signature = thinking.signature {
+            thinkingBlocks.append(.thinking(thinking.thinking, signature))
+        }
+    case .redactedThinking(let data):
+        thinkingBlocks.append(.redactedThinking(data))
+    default:
+        break
+    }
+}
+
+// Create all content objects for the assistant message
+var contentObjects = thinkingBlocks
+contentObjects.append(.text(responseText))
+
+// Save assistant's response to conversation history with thinking blocks included
+messages.append(MessageParameter.Message(
+    role: .assistant,
+    content: .list(contentObjects)
+))
+
+// For the next turn, add the user's new message
+let secondUserPrompt = "How would this affect human evolution over the next thousand years?"
+messages.append(MessageParameter.Message(
+    role: .user,
+    content: .text(secondUserPrompt)
+))
+
+// Create new parameters using the existing messages array
+let nextParameters = MessageParameter(
+    model: .claude37Sonnet,
+    messages: messages,
+    maxTokens: 4000,
+    thinking: .init(budgetTokens: 16000)
+)
+
+// Continue the conversation...
+let nextResponse = try await service.createMessage(nextParameters)
+
+// Process the next response...
+```
+
+#### Streaming with Extended Thinking
+
+For streaming responses with thinking enabled, you can use the provided StreamHandler or implement your own solution:
+
+```swift
+// StreamHandler to collect thinking blocks from the stream
+let streamHandler = StreamHandler()
+
+// Conversation history
+var messages: [MessageParameter.Message] = []
+
+// Add user message
+let userMessage = MessageParameter.Message(
+    role: .user,
+    content: .text("Solve this math problem: If a train travels at 120 km/h, how long will it take to cover 450 km?")
+)
+messages.append(userMessage)
+
+// Create parameters with thinking enabled and streaming
+let parameters = MessageParameter(
+    model: .claude37Sonnet,
+    messages: messages,
+    maxTokens: 4000,
+    stream: true,
+    thinking: .init(budgetTokens: 8000)
+)
+
+// Start streaming
+let stream = try await service.streamMessage(parameters)
+
+// Process stream events
+for try await event in stream {
+    // Let the handler process the event
+    streamHandler.handleStreamEvent(event)
+    
+    // Update UI as needed
+    if let delta = event.delta {
+        switch delta.type {
+        case "thinking_delta":
+            if let thinking = delta.thinking {
+                print("Thinking: \(thinking)", terminator: "")
+            }
+        case "text_delta":
+            if let text = delta.text {
+                print("Response: \(text)", terminator: "")
+            }
+        default:
+            break
+        }
+    }
+}
+
+// After streaming is complete, get the final text response
+let finalResponse = streamHandler.textResponse
+
+// Get thinking blocks
+let thinkingBlocks = streamHandler.getThinkingBlocksForAPI()
+
+// Create all content objects for the assistant message
+var contentObjects = thinkingBlocks
+contentObjects.append(.text(finalResponse))
+
+// Save assistant's response to conversation history with thinking blocks included
+messages.append(MessageParameter.Message(
+    role: .assistant,
+    content: .list(contentObjects)
+))
+
+// For the next turn, add the user's new message
+let secondUserPrompt = "Can you explain the solution in more detail?"
+messages.append(MessageParameter.Message(
+    role: .user,
+    content: .text(secondUserPrompt)
+))
+
+// Continue the conversation with the next request
+// (Using the same pattern)
+```
+
+#### StreamHandler Implementation
+
+The StreamHandler is a utility class that helps collect thinking blocks and their signatures from streaming events. Note that this is a convenience implementation - engineers can create their own implementation as the API supports the necessary endpoints and provides decoders:
+
+```swift
+public final class StreamHandler {
+   
+    public init() {}
+    
+    // Current thinking content being collected
+    private var currentThinking = ""
+    // Current signature being collected
+    private var signature: String?
+    // Current text response being collected
+    private var currentResponse = ""
+    
+    // Track the current active content block index and type
+    private var currentBlockIndex: Int?
+    private var currentBlockType: String?
+    
+    // Store all collected thinking blocks
+    private var thinkingBlocks: [(thinking: String, signature: String?)] = []
+    // Stored redacted thinking blocks
+    private var redactedThinkingBlocks: [String] = []
+    
+    // Process a stream event
+    public func handleStreamEvent(_ event: MessageStreamResponse) {
+        switch event.streamEvent {
+        case .contentBlockStart:
+            handleContentBlockStart(event)
+        case .contentBlockDelta:
+            handleContentBlockDelta(event)
+        case .contentBlockStop:
+            handleContentBlockStop()
+        case .messageStart, .messageDelta, .messageStop, .none:
+            break
+        }
+    }
+    
+    // Get the thinking blocks for use in subsequent API calls
+    public func getThinkingBlocksForAPI() -> [MessageParameter.Message.Content.ContentObject] {
+        var blocks: [MessageParameter.Message.Content.ContentObject] = []
+        
+        // Add regular thinking blocks
+        for block in thinkingBlocks {
+            if let signature = block.signature {
+                blocks.append(.thinking(block.thinking, signature))
+            }
+        }
+        
+        // Add redacted thinking blocks if any
+        for data in redactedThinkingBlocks {
+            blocks.append(.redactedThinking(data))
+        }
+        
+        return blocks
+    }
+    
+    // Get text response content
+    public var textResponse: String {
+        return currentResponse
+    }
+    
+    // Reset all stored data
+    public func reset() {
+        currentThinking = ""
+        signature = nil
+        currentResponse = ""
+        currentBlockIndex = nil
+        currentBlockType = nil
+        thinkingBlocks.removeAll()
+        redactedThinkingBlocks.removeAll()
+    }
+    
+    // Private implementation details...
+    private func handleContentBlockStart(_ event: MessageStreamResponse) {
+        guard let contentBlock = event.contentBlock, let index = event.index else { return }
+        
+        currentBlockIndex = index
+        currentBlockType = contentBlock.type
+        
+        switch contentBlock.type {
+        case "thinking":
+            currentThinking = contentBlock.thinking ?? ""
+        case "redacted_thinking":
+            if let data = contentBlock.data {
+                redactedThinkingBlocks.append(data)
+            }
+        case "text":
+            currentResponse = contentBlock.text ?? ""
+        default:
+            break
+        }
+    }
+    
+    private func handleContentBlockDelta(_ event: MessageStreamResponse) {
+        guard let delta = event.delta, let index = event.index else { return }
+        
+        if currentBlockIndex != index {
+            currentBlockIndex = index
+        }
+        
+        switch delta.type {
+        case "thinking_delta":
+            if let thinking = delta.thinking {
+                currentThinking += thinking
+            }
+        case "signature_delta":
+            if let sig = delta.signature {
+                signature = sig
+            }
+        case "text_delta":
+            if let text = delta.text {
+                currentResponse += text
+            }
+        default:
+            break
+        }
+    }
+    
+    private func handleContentBlockStop() {
+        if currentBlockType == "thinking" && !currentThinking.isEmpty {
+            thinkingBlocks.append((thinking: currentThinking, signature: signature))
+            
+            currentThinking = ""
+            signature = nil
+        }
+        
+        currentBlockType = nil
+    }
+}
+```
+
+#### Important Notes About Extended Thinking
+
+- **Preserving Thinking Blocks**: In multi-turn conversations, thinking blocks should be included directly within the assistant's message content. This ensures Claude maintains reasoning continuity across turns.
+
+- **Token Budget**: The minimum thinking budget is 1,024 tokens. Larger budgets (16,000+ tokens) are recommended for complex tasks.
+
+- **Redacted Thinking**: Some thinking content may be flagged by safety systems and returned as redacted_thinking blocks, which should be preserved.
+
+- **Token Billing**: All thinking tokens (including redacted thinking) are billed as output tokens.
+
+- **Previous Turns**: In multi-turn conversations, thinking blocks from previous turns don't count against your context window.
+
+- **Compatibility**: Thinking mode isn't compatible with temperature, top_p, top_k modifications, or forced tool use.
+
+For more detailed information, refer to the [Anthropic Extended Thinking documentation](https://docs.anthropic.com/claude/docs/build-with-claude/extended-thinking).
 
 ## AIProxy
 
